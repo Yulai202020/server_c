@@ -6,7 +6,7 @@
 
 #include "string.c"
 
-#define PORT 8118
+#define PORT 8120
 
 int main() {
     int client_socket;

@@ -7,7 +7,7 @@
 
 #include "string.c"
 
-#define PORT 8118
+#define PORT 8127
 #define MAX_CLIENTS 100
 
 int client_sockets[MAX_CLIENTS];
@@ -17,11 +17,15 @@ int get_content_length(char* full_message) {
     int start_content_length = find(full_message, "Content-Length: ") + 16;
     char* tmp = substring(full_message, start_content_length, strlen(full_message)-1);
     int end_content_length = find(tmp, "\r");
+
     free(tmp);
+
     int content_length = stoi(substring(full_message, start_content_length, start_content_length + end_content_length));
+
     if (content_length < 0) {
         content_length = 0;
     }
+
     return content_length;
 }
 
@@ -84,6 +88,15 @@ void *handle_client(void *arg) {
     }
 
     // print info
+    char* splited = split(full_message, "\n")[0];
+    char* link;
+
+    if (method == "GET") {
+        link = substring(splited, 4, strlen(splited) - 10);
+    } else if (method == "POST") {
+        link = substring(splited, 5, strlen(splited) - 10);
+    }
+
     char* headers = get_headers(full_message);
     char* body = get_body(full_message);
 
@@ -109,7 +122,6 @@ void *handle_client(void *arg) {
     char* full_respone = stringSum(std_output, message);
     write(client_socket, full_respone, strlen(full_respone));
 
-
     // free(method);
     // free(full_message);
     // free(full_respone);
@@ -117,6 +129,10 @@ void *handle_client(void *arg) {
     // free(message);
     // free(body);
     // free(headers);
+
+    // link - is / smth
+    // body is body (post or get)
+    // headers is headers (like string)
 
     close(client_socket);
     return NULL;
