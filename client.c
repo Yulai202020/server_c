@@ -4,13 +4,16 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#define PORT 8081
+#include "string.c"
+
+#define PORT 8118
 
 int main() {
     int client_socket;
     struct sockaddr_in server_addr;
     char buffer[1024] = {0};
-    char message[1024];
+    char* message = (char*) malloc(1024);
+    memset(message, '\0', 1024);
 
     // Create socket
     if ((client_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -35,22 +38,24 @@ int main() {
 
     printf("Connected to the server at 127.0.0.1:%d\n", PORT);
 
-    while (1) {
-        printf("Enter message: ");
-        fgets(message, sizeof(message), stdin);
+    printf("Enter message: ");
+    fgets(message, 1024, stdin);
+    message[strcspn(message, "\n")] = '\r';
 
-        // Send message to server
-        send(client_socket, message, strlen(message), 0);
+    // Send message to server
+    int len = strlen(message);
+    char* request;
+    sprintf(request, "GET / HTTP/1.1\r\nContent-Length: %d\r\n\r\n%s", len, message);
 
-        // Read server response
-        int bytes_read = read(client_socket, buffer, sizeof(buffer) - 1);
-        if (bytes_read > 0) {
-            buffer[bytes_read] = '\0';
-            printf("Server: %s\n", buffer);
-        } else {
-            printf("Server disconnected\n");
-            break;
-        }
+    send(client_socket, request, strlen(request), 0);
+
+    // Read server response
+    int bytes_read = read(client_socket, buffer, sizeof(buffer) - 1);
+    if (bytes_read > 0) {
+        buffer[bytes_read] = '\0';
+        printf("Server: %s\n", buffer);
+    } else {
+        printf("Server disconnected\n");
     }
 
     close(client_socket);
