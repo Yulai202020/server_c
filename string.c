@@ -41,6 +41,9 @@ char* itos(int number) {
 }
 
 int stoi(char* string) {
+    if (string == NULL) {
+        return -1;
+    }
     int result = 0;
     size_t len = strlen(string);
 

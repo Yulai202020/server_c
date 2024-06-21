@@ -7,7 +7,7 @@
 
 #include "string.c"
 
-#define PORT 8127
+#define PORT 8130
 #define MAX_CLIENTS 100
 
 int client_sockets[MAX_CLIENTS];
@@ -29,6 +29,21 @@ int get_content_length(char* full_message) {
     return content_length;
 }
 
+char* get_smth(char* full_message, char* target) {
+    char** splited = split(full_message, "\r\n");
+    int count = 0;
+
+    while (splited[count] != "") {
+        if (startswith(splited[count], target)) {
+            size_t len = strlen(target);
+            return substring(splited[count], len, strlen(splited[count]));
+        }
+        count++;
+    }
+
+    return "";
+}
+
 char* get_body(char* full_message) {
     int start = find(full_message, "\r\n\r\n");
     int end = strlen(full_message);
@@ -38,9 +53,25 @@ char* get_body(char* full_message) {
 }
 
 char* get_headers(char* full_message) {
-    int start = find(full_message, "\r\n\r\n");
-    char* headers = substring(full_message, 0, start);
+    int end = find(full_message, "\r\n\r\n");
+    int start = find(full_message, "\r\n");
+    char* headers = substring(full_message + 2, start, end);
     return headers;
+}
+
+char* get_link(char* full_message, char* method) {
+    char* splited = split(full_message, "\n")[0];
+    char* link;
+
+    if (method == "GET") {
+        link = substring(splited, 4, strlen(splited) - 10);
+    } else if (method == "POST") {
+        link = substring(splited, 5, strlen(splited) - 10);
+    }
+
+    free(splited);
+
+    return link;
 }
 
 void *handle_client(void *arg) {
@@ -88,14 +119,7 @@ void *handle_client(void *arg) {
     }
 
     // print info
-    char* splited = split(full_message, "\n")[0];
-    char* link;
-
-    if (method == "GET") {
-        link = substring(splited, 4, strlen(splited) - 10);
-    } else if (method == "POST") {
-        link = substring(splited, 5, strlen(splited) - 10);
-    }
+    char* link = get_link(full_message, link);
 
     char* headers = get_headers(full_message);
     char* body = get_body(full_message);
